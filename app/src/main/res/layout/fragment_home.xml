@@ -1,9 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:map="http://schemas.android.com/apk/res-auto"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/map"
-    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:id="@+id/fl_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    />
+    android:layout_height="match_parent">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chip_decline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/decline"
+        android:textColor="@android:color/white"
+        android:layout_margin="16dp"
+        android:visibility="gone"
+        app:chipBackgroundColor="@color/colorAccent"
+        app:chipIconTint="@android:color/holo_orange_light"
+        app:chipIcon="@drawable/ic_baseline_clear"
+        tools:visibility="visible"/>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_accept"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/colorAccent"
+        app:cardCornerRadius="8dp"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="center_horizontal"
+            android:padding="16dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="center_horizontal">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_type_uber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/uber"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/white"
+                    android:fontFamily="@font/uber_move"/>
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:clickable="false">
+
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                        android:id="@+id/circular_progres_bar"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:progress="0"
+                        app:trackCornerRadius="3dp"
+                        app:trackThickness="3dp"
+                        app:indicatorDirectionCircular="clockwise"
+                        app:trackColor="@android:color/white"
+                        app:indicatorSize="64dp" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/tv_countdown_accept"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:layout_centerInParent="true"
+                        android:fontFamily="@font/uber_move"
+                        android:gravity="center"
+                        tools:text="100"/>
+
+<!--                    <androidx.appcompat.widget.AppCompatImageView-->
+<!--                        android:layout_width="40dp"-->
+<!--                        android:layout_height="40dp"-->
+<!--                        android:src="@drawable/ic_baseline_person"-->
+<!--                        android:tint="@android:color/white"-->
+<!--                        android:clickable="false"-->
+<!--                        android:layout_centerInParent="true"/>-->
+
+                </RelativeLayout>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_rating_uber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginEnd="8dp"
+                    android:drawableTint="@android:color/white"
+                    android:drawableEnd="@drawable/ic_baseline_star_rate"
+                    android:text="5.0"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/white"
+                    android:fontFamily="@font/uber_move"/>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/tv_estimate_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:textColor="@android:color/white"
+                android:textSize="20sp"
+                android:fontFamily="@font/uber_move"/>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/tv_estimate_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:fontFamily="@font/uber_move"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.cardview.widget.CardView>
+
+</FrameLayout>

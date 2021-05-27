@@ -11,6 +11,7 @@ import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.kotlinuberdriver.Model.DriverInfo
+import com.google.android.gms.maps.model.LatLng
 import java.lang.StringBuilder
 
 object Common {
@@ -21,6 +22,9 @@ object Common {
     const val TOKEN_REFERENCE: String = "Token"
     const val NOTIFICATION_TITLE: String = "title"
     const val NOTIFICATION_BODY: String = "body"
+    const val PICKUP_LOCATION: String = "PickupLocation"
+    const val RIDER_KEY: String = "RiderKey"
+    const val REQUEST_DRIVER_TITLE: String = "RequestDriver"
 
     fun buildWelcomeMessage(): String {
         return StringBuilder("Welcome, ")
@@ -66,5 +70,40 @@ object Common {
         }
         val notification = builder.build()
         notificationManager.notify(id, notification)
+    }
+
+    fun decodePoly(encoded: String): ArrayList<LatLng> {
+        val poly = ArrayList<LatLng>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lat += dlat
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lng += dlng
+            val p = LatLng(
+                lat.toDouble() / 1E5,
+                lng.toDouble() / 1E5
+            )
+            poly.add(p)
+        }
+        return poly
     }
 }
