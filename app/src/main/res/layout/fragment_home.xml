@@ -21,8 +21,8 @@
         android:textColor="@android:color/white"
         android:layout_margin="16dp"
         android:visibility="gone"
-        app:chipBackgroundColor="@color/colorAccent"
         app:chipIconTint="@android:color/holo_orange_light"
+        app:chipBackgroundColor="@color/colorAccent"
         app:chipIcon="@drawable/ic_baseline_clear"
         tools:visibility="visible"/>
 

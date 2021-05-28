@@ -2,13 +2,11 @@ package com.example.kotlinuberdriver.ui.home
 
 import android.Manifest
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
-import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
@@ -27,6 +25,7 @@ import com.example.kotlinuberdriver.Model.EventBus.DriverRequestReceived
 import com.example.kotlinuberdriver.R
 import com.example.kotlinuberdriver.Remote.GoogleApi
 import com.example.kotlinuberdriver.Remote.RetrofitClient
+import com.example.kotlinuberdriver.Utils.UserUtils
 import com.example.kotlinuberdriver.databinding.FragmentHomeBinding
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
@@ -36,7 +35,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
@@ -49,6 +47,7 @@ import com.karumi.dexter.listener.single.PermissionListener
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
@@ -87,6 +86,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private var blackPolylineOptions: PolylineOptions?= null
     private var polylineList: ArrayList<LatLng>?= null
 
+    //decline request
+    private var driverRequestReceived: DriverRequestReceived?= null
+    private var countDownEvent: Disposable?= null
+
     private val onlineValueEventListener = object:ValueEventListener{
         override fun onDataChange(snapshot: DataSnapshot) {
             if(snapshot.exists() && currentUserRef != null){
@@ -109,6 +112,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
+        initView()
         initDriverLocation()
 
         mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
@@ -129,7 +133,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onStart() {
         super.onStart()
-        EventBus.getDefault().register(this)
+        if (!EventBus.getDefault().isRegistered(this)){
+            EventBus.getDefault().register(this)
+        }
     }
 
     override fun onDestroy() {
@@ -218,6 +224,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     fun onDriverRequestReceived(event: DriverRequestReceived) {
+        driverRequestReceived = event
+
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -348,6 +356,22 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                         }
                     })
             }
+    }
+
+    private fun initView() {
+        binding.chipDecline.setOnClickListener {
+            if(driverRequestReceived != null) {
+                if (countDownEvent != null) {
+                    countDownEvent!!.dispose()
+                }
+                binding.chipDecline.visibility = View.GONE
+                binding.cvAccept.visibility = View.GONE
+                mMap.clear()
+                binding.circularProgresBar.progress = 0
+                UserUtils.sendDeclineRequest(binding.flRoot, activity, driverRequestReceived!!.key)
+                driverRequestReceived = null
+            }
+        }
     }
 
     private fun initDriverLocation() {

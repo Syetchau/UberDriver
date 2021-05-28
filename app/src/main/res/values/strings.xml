@@ -23,4 +23,7 @@
     <string name="decline">Decline</string>
     <string name="uber">Uber</string>
     <string name="permission_require">Permission require</string>
+    <string name="decline_success">You have decline this request</string>
+    <string name="decline_failed">Decline failed</string>
+    <string name="token_not_found">Token not found</string>
 </resources>

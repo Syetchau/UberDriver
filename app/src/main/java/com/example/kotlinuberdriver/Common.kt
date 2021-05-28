@@ -24,7 +24,9 @@ object Common {
     const val NOTIFICATION_BODY: String = "body"
     const val PICKUP_LOCATION: String = "PickupLocation"
     const val RIDER_KEY: String = "RiderKey"
+    const val DRIVER_KEY: String = "DriverKey"
     const val REQUEST_DRIVER_TITLE: String = "RequestDriver"
+    const val REQUEST_DRIVER_DECLINE: String = "Decline"
 
     fun buildWelcomeMessage(): String {
         return StringBuilder("Welcome, ")
