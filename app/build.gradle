@@ -84,4 +84,7 @@ dependencies {
 
     //EventBus
     implementation 'org.greenrobot:eventbus:3.2.0'
+
+    //loadingButton
+    implementation 'com.github.koushikcse:LoadingButton:1.7'
 }

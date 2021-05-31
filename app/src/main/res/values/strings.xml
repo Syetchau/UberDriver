@@ -26,4 +26,6 @@
     <string name="decline_success">You have decline this request</string>
     <string name="decline_failed">Decline failed</string>
     <string name="token_not_found">Token not found</string>
+    <string name="start_uber">START UBER</string>
+    <string name="rider_not_found">Rider not found</string>
 </resources>

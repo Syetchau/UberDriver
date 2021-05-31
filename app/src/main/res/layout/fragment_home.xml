@@ -78,24 +78,25 @@
                         app:trackColor="@android:color/white"
                         app:indicatorSize="64dp" />
 
-                    <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/tv_countdown_accept"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/white"
-                        android:textSize="16sp"
-                        android:layout_centerInParent="true"
-                        android:fontFamily="@font/uber_move"
-                        android:gravity="center"
-                        tools:text="100"/>
+<!--                    <androidx.appcompat.widget.AppCompatTextView-->
+<!--                        android:id="@+id/tv_countdown_accept"-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:textColor="@android:color/white"-->
+<!--                        android:textSize="16sp"-->
+<!--                        android:layout_centerInParent="true"-->
+<!--                        android:fontFamily="@font/uber_move"-->
+<!--                        android:gravity="center"-->
+<!--                        tools:text="100"/>-->
 
-<!--                    <androidx.appcompat.widget.AppCompatImageView-->
-<!--                        android:layout_width="40dp"-->
-<!--                        android:layout_height="40dp"-->
-<!--                        android:src="@drawable/ic_baseline_person"-->
-<!--                        android:tint="@android:color/white"-->
-<!--                        android:clickable="false"-->
-<!--                        android:layout_centerInParent="true"/>-->
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/iv_round_avatar"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_baseline_person"
+                        android:tint="@android:color/white"
+                        android:clickable="false"
+                        android:layout_centerInParent="true"/>
 
                 </RelativeLayout>
 
@@ -133,6 +134,122 @@
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:fontFamily="@font/uber_move"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_start_uber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="8dp"
+        android:visibility="gone"
+        app:cardCornerRadius="8dp"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_baseline_keyboard_arrow_down"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/iv_start_uber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_baseline_account_circle_24"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_start_uber_estimate_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@id/iv_start_uber"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/black"
+                    android:fontFamily="@font/uber_move"
+                    tools:text="1 mins"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_start_uber_estimate_distance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_toEndOf="@id/iv_start_uber"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/black"
+                    android:fontFamily="@font/uber_move"
+                    tools:text="10 km"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_baseline_format_list_bulleted"/>
+
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"/>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/iv_phone_call"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@drawable/ic_baseline_perm_phone_msg"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_rider_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:textColor="@android:color/black"
+                    android:textSize="22sp"
+                    android:fontFamily="@font/uber_move"
+                    tools:text="Joel"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/iv_dots"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_baseline_more_vert"/>
+
+            </RelativeLayout>
+
+            <com.kusu.loadingbutton.LoadingButton
+                android:id="@+id/btn_start_uber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:text="@string/start_uber"
+                android:textColor="@color/white"
+                app:lb_buttonColor="@color/colorStartUber"
+                app:lb_isCircular="true" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

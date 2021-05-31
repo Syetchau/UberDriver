@@ -25,10 +25,14 @@ class MyFirebaseMessagingService: FirebaseMessagingService() {
         val data = remoteMsg.data
         if (data != null) {
             if(data[Common.NOTIFICATION_TITLE].equals(Common.REQUEST_DRIVER_TITLE)) {
-                EventBus.getDefault().postSticky(DriverRequestReceived(
-                    data[Common.RIDER_KEY]!!,
-                    data[Common.PICKUP_LOCATION]!!)
-                )
+                val driverRequestReceived = DriverRequestReceived()
+                driverRequestReceived.key = data[Common.RIDER_KEY]
+                driverRequestReceived.pickupLocation = data[Common.PICKUP_LOCATION]
+                driverRequestReceived.pickupLocationString = data[Common.PICKUP_LOCATION_STRING]
+                driverRequestReceived.destinationLocation = data[Common.DESTINATION_LOCATION]
+                driverRequestReceived.destinationLocationString = data[Common.DESTINATION_LOCATION_STRING]
+
+                EventBus.getDefault().postSticky(driverRequestReceived)
             } else {
                 Common.showNotification(this, Random.nextInt(),
                     data[Common.NOTIFICATION_TITLE],

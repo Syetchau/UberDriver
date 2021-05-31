@@ -13,6 +13,8 @@ import androidx.core.app.NotificationCompat
 import com.example.kotlinuberdriver.Model.DriverInfo
 import com.google.android.gms.maps.model.LatLng
 import java.lang.StringBuilder
+import java.util.*
+import kotlin.collections.ArrayList
 
 object Common {
     var currentUser: DriverInfo?= null
@@ -23,10 +25,15 @@ object Common {
     const val NOTIFICATION_TITLE: String = "title"
     const val NOTIFICATION_BODY: String = "body"
     const val PICKUP_LOCATION: String = "PickupLocation"
+    const val PICKUP_LOCATION_STRING = "PickupLocationString"
+    const val DESTINATION_LOCATION: String = "DestinationLocation"
+    const val DESTINATION_LOCATION_STRING = "DestinationLocationString"
     const val RIDER_KEY: String = "RiderKey"
+    const val RIDER_INFO: String = "RiderInfo"
     const val DRIVER_KEY: String = "DriverKey"
     const val REQUEST_DRIVER_TITLE: String = "RequestDriver"
     const val REQUEST_DRIVER_DECLINE: String = "Decline"
+    const val TRIP: String = "Trips"
 
     fun buildWelcomeMessage(): String {
         return StringBuilder("Welcome, ")
@@ -107,5 +114,15 @@ object Common {
             poly.add(p)
         }
         return poly
+    }
+
+    fun createUniqueTripId(timeOffset: Long?): String? {
+        var random = Random()
+        var current = System.currentTimeMillis()+timeOffset!!
+        var unique = current + random.nextLong()
+        if (unique < 0) {
+            unique *= -1
+        }
+        return unique.toString()
     }
 }

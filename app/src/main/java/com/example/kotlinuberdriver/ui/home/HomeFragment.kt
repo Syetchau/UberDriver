@@ -3,12 +3,14 @@ package com.example.kotlinuberdriver.ui.home
 import android.Manifest
 import android.animation.ValueAnimator
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
 import android.os.Looper
+import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -17,11 +19,15 @@ import android.view.animation.LinearInterpolator
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.kotlinuberdriver.Common
 import com.example.kotlinuberdriver.DriverHomeActivity
 import com.example.kotlinuberdriver.Model.EventBus.DriverRequestReceived
+import com.example.kotlinuberdriver.Model.RiderInfo
+import com.example.kotlinuberdriver.Model.TripPlan
 import com.example.kotlinuberdriver.R
 import com.example.kotlinuberdriver.Remote.GoogleApi
 import com.example.kotlinuberdriver.Remote.RetrofitClient
@@ -57,6 +63,7 @@ import java.io.IOException
 import java.lang.StringBuilder
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashMap
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -89,6 +96,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     //decline request
     private var driverRequestReceived: DriverRequestReceived?= null
     private var countDownEvent: Disposable?= null
+    private var isTripStart = false
+    private var onlineSystemAlreadyRegister = false
+    private var tripNumberId: String?= ""
 
     private val onlineValueEventListener = object:ValueEventListener{
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -143,6 +153,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         geofire.removeLocation(FirebaseAuth.getInstance().currentUser!!.uid)
         onlineRef.removeEventListener(onlineValueEventListener)
         compositeDisposable.clear()
+        onlineSystemAlreadyRegister = false
         if (EventBus.getDefault().hasSubscriberForEvent(DriverHomeActivity::class.java)){
             EventBus.getDefault().removeStickyEvent(DriverHomeActivity::class.java)
         }
@@ -301,8 +312,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
                             val origin = LatLng(location.latitude, location.longitude)
                             val destination = LatLng(
-                                event.pickupLocation.split(",")[0].toDouble(),
-                                event.pickupLocation.split(",")[1].toDouble()
+                                event.pickupLocation!!.split(",")[0].toDouble(),
+                                event.pickupLocation!!.split(",")[1].toDouble()
                             )
 
                             val latLngBound = LatLngBounds.Builder()
@@ -339,15 +350,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                                     binding.circularProgresBar.progress += 1
                                     binding.circularProgresBar.setIndicatorColor(requireContext()
                                         .getColor(android.R.color.darker_gray))
-                                    binding.tvCountdownAccept.text =
-                                        binding.circularProgresBar.progress.toString()
+//                                    binding.tvCountdownAccept.text =
+//                                        binding.circularProgresBar.progress.toString()
                                 }
                                 .takeUntil{ aLong ->
                                     aLong == "100".toLong()
                                 }
                                 .doOnComplete{
-                                    Toast.makeText(context, "Fake accept action",
-                                        Toast.LENGTH_LONG).show()
+                                    createTripPlan(event, duration, distance)
                                 }
                                 .subscribe()
 
@@ -368,7 +378,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 binding.cvAccept.visibility = View.GONE
                 mMap.clear()
                 binding.circularProgresBar.progress = 0
-                UserUtils.sendDeclineRequest(binding.flRoot, activity, driverRequestReceived!!.key)
+                UserUtils.sendDeclineRequest(binding.flRoot, activity, driverRequestReceived!!.key!!)
                 driverRequestReceived = null
             }
         }
@@ -414,37 +424,61 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
                     val pos = LatLng(locationResult.lastLocation.latitude,
                         locationResult.lastLocation.longitude)
-                    val geoCoder = Geocoder(requireContext(), Locale.getDefault())
-                    val addressList: List<Address>?
-
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f))
-                    try {
-                        addressList = geoCoder.getFromLocation(
-                            locationResult.lastLocation.latitude,
-                            locationResult.lastLocation.longitude, 1)
-                        val cityName = addressList[0].locality
 
-                        driversLocationRef = FirebaseDatabase.getInstance()
-                            .getReference(Common.DRIVERS_LOCATION_REFERENCE)
-                            .child(cityName)
-                        currentUserRef = driversLocationRef
-                            .child(FirebaseAuth.getInstance().currentUser!!.uid)
-                        geofire = GeoFire(driversLocationRef)
+                    if(!isTripStart) {
+                        val geoCoder = Geocoder(requireContext(), Locale.getDefault())
+                        val addressList: List<Address>?
+                        try {
+                            addressList = geoCoder.getFromLocation(
+                                locationResult.lastLocation.latitude,
+                                locationResult.lastLocation.longitude, 1
+                            )
+                            val cityName = addressList[0].locality
 
-                        //update location
-                        geofire.setLocation(
-                            FirebaseAuth.getInstance().currentUser!!.uid,
-                            GeoLocation(locationResult.lastLocation.latitude,
-                                locationResult.lastLocation.longitude)
-                        ){ _: String?, error: DatabaseError? ->
-                            if(error != null) {
-                                Snackbar.make(mapFragment.requireView(), error.message,
-                                    Snackbar.LENGTH_SHORT).show()
+                            driversLocationRef = FirebaseDatabase.getInstance()
+                                .getReference(Common.DRIVERS_LOCATION_REFERENCE)
+                                .child(cityName)
+                            currentUserRef = driversLocationRef
+                                .child(FirebaseAuth.getInstance().currentUser!!.uid)
+                            geofire = GeoFire(driversLocationRef)
+
+                            //update location
+                            geofire.setLocation(
+                                FirebaseAuth.getInstance().currentUser!!.uid,
+                                GeoLocation(
+                                    locationResult.lastLocation.latitude,
+                                    locationResult.lastLocation.longitude
+                                )
+                            ) { _: String?, error: DatabaseError? ->
+                                if (error != null) {
+                                    Snackbar.make(
+                                        mapFragment.requireView(), error.message,
+                                        Snackbar.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
+                            registerOnlineSystem()
+                        } catch (e: IOException) {
+                            Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_SHORT).show()
                         }
-                        registerOnlineSystem()
-                    }catch (e: IOException){
-                        Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_SHORT).show()
+                    } else {
+                        if (!TextUtils.isEmpty(tripNumberId)) {
+                            // update location
+                            val updateData = HashMap<String, Any>()
+                            updateData["currentLat"] = locationResult.lastLocation.latitude
+                            updateData["currentLng"] = locationResult.lastLocation.longitude
+
+                            FirebaseDatabase.getInstance()
+                                .getReference(Common.TRIP)
+                                .child(tripNumberId!!)
+                                .updateChildren(updateData)
+                                .addOnFailureListener{ e->
+                                    Snackbar.make(mapFragment.requireView(), e.message!!,
+                                        Snackbar.LENGTH_LONG).show()
+                                }
+                                .addOnSuccessListener {  }
+                        }
                     }
                 }
             }
@@ -476,6 +510,134 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun registerOnlineSystem() {
-        onlineRef.addValueEventListener(onlineValueEventListener)
+        if (!onlineSystemAlreadyRegister){
+            onlineRef.addValueEventListener(onlineValueEventListener)
+            onlineSystemAlreadyRegister = true
+        }
+    }
+
+    private fun createTripPlan(event: DriverRequestReceived, duration: String, distance: String) {
+        setLayoutProcess(true)
+        FirebaseDatabase          //sync server time with device
+            .getInstance()
+            .getReference(".info/serverTimeOffset")
+            .addListenerForSingleValueEvent(object: ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val timeOffset = snapshot.getValue(Long::class.java)
+                    //load rider info
+                    FirebaseDatabase
+                        .getInstance()
+                        .getReference(Common.RIDER_INFO)
+                        .child(event.key!!)
+                        .addListenerForSingleValueEvent(object: ValueEventListener{
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                if (snapshot.exists()){
+                                    val rider = snapshot.getValue(RiderInfo::class.java)
+                                    //get location
+                                    if (ActivityCompat.checkSelfPermission(
+                                            requireContext(),
+                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                                            requireContext(),
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        ) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        Snackbar.make(mapFragment.requireView(),
+                                            requireContext().getString(R.string.permission_require),
+                                            Snackbar.LENGTH_LONG).show()
+                                        return
+                                    }
+                                    fusedLocationProviderClient!!.lastLocation
+                                        .addOnFailureListener { e ->
+                                            Snackbar.make(mapFragment.requireView(),
+                                                e.message+ "" + event.key,
+                                                Snackbar.LENGTH_LONG).show()
+                                        }
+                                        .addOnSuccessListener { location ->
+                                            //create trip planner
+                                            val tripPlan = TripPlan()
+                                            tripPlan.driver = FirebaseAuth.getInstance().currentUser!!.uid
+                                            tripPlan.rider = event.key
+                                            tripPlan.driverInfo = Common.currentUser
+                                            tripPlan.riderInfo = rider
+                                            tripPlan.origin = event.pickupLocation
+                                            tripPlan.originString = event.pickupLocationString
+                                            tripPlan.destination = event.destinationLocation
+                                            tripPlan.destinationString = event.destinationLocationString
+                                            tripPlan.durationPickup = duration
+                                            tripPlan.distancePickup = distance
+                                            tripPlan.currentLat = location.latitude
+                                            tripPlan.currentLng = location.longitude
+                                            tripNumberId = Common.createUniqueTripId(timeOffset)
+
+                                            //submit
+                                            FirebaseDatabase.getInstance()
+                                                .getReference(Common.TRIP)
+                                                .child(tripNumberId!!)
+                                                .setValue(tripPlan)
+                                                .addOnFailureListener { e ->
+                                                    Snackbar.make(mapFragment.requireView(), e.message!!,
+                                                        Snackbar.LENGTH_LONG).show()
+                                                }
+                                                .addOnSuccessListener {
+                                                    binding.tvRiderName.text = rider!!.firstName
+                                                    binding.tvStartUberEstimateDistance.text = distance
+                                                    binding.tvStartUberEstimateTime.text = duration
+
+                                                    setOfflineModeForDriver(event, distance, duration)
+                                                }
+                                        }
+                                } else {
+                                    Snackbar.make(mapFragment.requireView(),
+                                        requireContext().getString(R.string.rider_not_found) +
+                                                "" + event.key, Snackbar.LENGTH_LONG).show()
+                                }
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                                Snackbar.make(mapFragment.requireView(), error.message,
+                                    Snackbar.LENGTH_LONG).show()
+                            }
+                        })
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Snackbar.make(mapFragment.requireView(), error.message,
+                        Snackbar.LENGTH_LONG).show()
+                }
+            })
+    }
+
+    private fun setLayoutProcess(process: Boolean) {
+        var color = -1
+        if (process) {
+            color = ContextCompat.getColor(requireContext(), R.color.dark_gray)
+            //binding.circularProgresBar.isIndeterminate = true
+            binding.tvRatingUber.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0,0, R.drawable.ic_baseline_star_dark_gray, 0)
+        } else {
+            color = ContextCompat.getColor(requireContext(), android.R.color.white)
+            //binding.circularProgresBar.isIndeterminate = true
+            binding.circularProgresBar.progress = 0
+            binding.tvRatingUber.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0,0, R.drawable.ic_baseline_star_rate, 0)
+        }
+        binding.tvTypeUber.setTextColor(color)
+        binding.tvRatingUber.setTextColor(color)
+        binding.tvEstimateTime.setTextColor(color)
+        binding.tvEstimateDistance.setTextColor(color)
+        ImageViewCompat.setImageTintList(binding.ivRoundAvatar, ColorStateList.valueOf(color))
+    }
+
+    private fun setOfflineModeForDriver(event: DriverRequestReceived,
+                                        distance: String, duration: String) {
+        if (currentUserRef != null) {
+            currentUserRef!!.removeValue()
+        }
+        setLayoutProcess(false)
+        binding.cvAccept.visibility = View.GONE
+        binding.cvStartUber.visibility = View.VISIBLE
+
+        isTripStart = true
     }
 }
