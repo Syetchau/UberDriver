@@ -631,6 +631,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun setOfflineModeForDriver(event: DriverRequestReceived,
                                         distance: String, duration: String) {
+        UserUtils.sendAcceptRequestToRider(mapFragment.view, requireContext(), event.key!!, tripNumberId!!)
+
         if (currentUserRef != null) {
             currentUserRef!!.removeValue()
         }

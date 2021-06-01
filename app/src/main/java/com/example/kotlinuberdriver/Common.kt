@@ -33,7 +33,9 @@ object Common {
     const val DRIVER_KEY: String = "DriverKey"
     const val REQUEST_DRIVER_TITLE: String = "RequestDriver"
     const val REQUEST_DRIVER_DECLINE: String = "Decline"
+    const val REQUEST_DRIVER_ACCEPT: String = "Accept"
     const val TRIP: String = "Trips"
+    const val TRIP_KEY: String = "TripKey"
 
     fun buildWelcomeMessage(): String {
         return StringBuilder("Welcome, ")
