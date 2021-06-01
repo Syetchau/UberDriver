@@ -36,6 +36,9 @@ object Common {
     const val REQUEST_DRIVER_ACCEPT: String = "Accept"
     const val TRIP: String = "Trips"
     const val TRIP_KEY: String = "TripKey"
+    const val TRIP_PICKUP_REFERENCE: String = "TripPickupLocation"
+    const val MIN_RANGE_PICKUP_IN_KM: Double = 0.05  //50m
+    const val WAIT_TIME_IN_MIN: Int = 1
 
     fun buildWelcomeMessage(): String {
         return StringBuilder("Welcome, ")

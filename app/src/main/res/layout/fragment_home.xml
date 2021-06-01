@@ -210,6 +210,35 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"/>
 
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/ll_notify_rider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_notify_rider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textSize="18sp"
+                    android:fontFamily="@font/uber_move"
+                    tools:text="02:00"/>
+
+                <ProgressBar
+                    android:id="@+id/progress_bar_notify"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:min="0"
+                    android:max="120"
+                    android:indeterminate="false"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"/>
+
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -244,6 +273,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
+                android:enabled="false"
                 android:paddingLeft="10dp"
                 android:paddingRight="10dp"
                 android:text="@string/start_uber"

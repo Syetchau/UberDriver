@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.View
 import android.widget.Toast
 import com.example.kotlinuberdriver.Common
+import com.example.kotlinuberdriver.Model.EventBus.NotifyRiderEvent
 import com.example.kotlinuberdriver.Model.FCMSendData
 import com.example.kotlinuberdriver.Model.Token
 import com.example.kotlinuberdriver.R
@@ -20,6 +21,7 @@ import com.google.firebase.database.ValueEventListener
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import org.greenrobot.eventbus.EventBus
 import java.lang.StringBuilder
 
 object UserUtils {
@@ -139,6 +141,52 @@ object UserUtils {
 
                 override fun onCancelled(error: DatabaseError) {
                     Snackbar.make(view!!, error.message, Snackbar.LENGTH_LONG).show()
+                }
+            })
+    }
+
+    fun sendNotifyToRider(context: Context, view: View, key: String?) {
+        val compositeDisposable = CompositeDisposable()
+        val fcmService = RetrofitFCMClient.instance!!.create(FCMService::class.java)
+        FirebaseDatabase
+            .getInstance()
+            .getReference(Common.TOKEN_REFERENCE)
+            .child(key!!)
+            .addListenerForSingleValueEvent(object: ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()){
+                        val tokenModel = snapshot.getValue(Token::class.java)
+                        val notificationData: MutableMap<String, String> = HashMap()
+                        notificationData[Common.NOTIFICATION_TITLE] = context.getString(R.string.driver_arrived)
+                        notificationData[Common.NOTIFICATION_BODY] = context.getString(R.string.your_driver_arrived)
+                        notificationData[Common.DRIVER_KEY] = FirebaseAuth.getInstance().currentUser!!.uid
+                        notificationData[Common.RIDER_KEY] = key
+
+                        val fcmData = FCMSendData(tokenModel!!.token, notificationData)
+                        compositeDisposable.add(fcmService.sendNotification(fcmData)!!
+                            .subscribeOn(Schedulers.newThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe({response ->
+                                if (response!!.success == 0){
+                                    compositeDisposable.clear()
+                                    Snackbar.make(view, context.getString(R.string.accept_failed),
+                                        Snackbar.LENGTH_LONG).show()
+                                } else {
+                                    EventBus.getDefault().postSticky(NotifyRiderEvent())
+                                }
+                            }, {t: Throwable? ->
+                                compositeDisposable.clear()
+                                Snackbar.make(view,t!!.message!!, Snackbar.LENGTH_LONG).show()
+                            }))
+                    } else{
+                        compositeDisposable.clear()
+                        Snackbar.make(view, context.getString(R.string.token_not_found),
+                            Snackbar.LENGTH_LONG).show()
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Snackbar.make(view, error.message, Snackbar.LENGTH_LONG).show()
                 }
             })
     }

@@ -29,4 +29,7 @@
     <string name="start_uber">START UBER</string>
     <string name="rider_not_found">Rider not found</string>
     <string name="accept_failed">Accept failed</string>
+    <string name="driver_arrived">Driver arrived</string>
+    <string name="your_driver_arrived">Your driver arrived</string>
+    <string name="time_over">Time Over</string>
 </resources>

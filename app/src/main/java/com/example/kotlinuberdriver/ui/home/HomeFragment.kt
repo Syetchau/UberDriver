@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
@@ -26,6 +27,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.kotlinuberdriver.Common
 import com.example.kotlinuberdriver.DriverHomeActivity
 import com.example.kotlinuberdriver.Model.EventBus.DriverRequestReceived
+import com.example.kotlinuberdriver.Model.EventBus.NotifyRiderEvent
 import com.example.kotlinuberdriver.Model.RiderInfo
 import com.example.kotlinuberdriver.Model.TripPlan
 import com.example.kotlinuberdriver.R
@@ -35,6 +37,8 @@ import com.example.kotlinuberdriver.Utils.UserUtils
 import com.example.kotlinuberdriver.databinding.FragmentHomeBinding
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
+import com.firebase.geofire.GeoQuery
+import com.firebase.geofire.GeoQueryEventListener
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -65,7 +69,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 
-class HomeFragment : Fragment(), OnMapReadyCallback {
+class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
 
     private lateinit var homeViewModel: HomeViewModel
     private lateinit var mMap: GoogleMap
@@ -99,6 +103,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private var isTripStart = false
     private var onlineSystemAlreadyRegister = false
     private var tripNumberId: String?= ""
+
+    //pickup, notify
+    private var pickupGeoFire: GeoFire?= null
+    private var pickupGeoQuery: GeoQuery?= null
 
     private val onlineValueEventListener = object:ValueEventListener{
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -156,6 +164,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         onlineSystemAlreadyRegister = false
         if (EventBus.getDefault().hasSubscriberForEvent(DriverHomeActivity::class.java)){
             EventBus.getDefault().removeStickyEvent(DriverHomeActivity::class.java)
+        }
+        if (EventBus.getDefault().hasSubscriberForEvent(NotifyRiderEvent::class.java)){
+            EventBus.getDefault().removeStickyEvent(NotifyRiderEvent::class.java)
         }
         EventBus.getDefault().unregister(this)
         super.onDestroy()
@@ -334,6 +345,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                                 .icon(BitmapDescriptorFactory.defaultMarker())
                                 .title("Pickup Location"))
 
+                            createGeoFirePickupLocation(event.key, destination)
+
                             mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBound, 160))
                             mMap.moveCamera(CameraUpdateFactory.zoomTo(mMap.cameraPosition.zoom-1))
 
@@ -366,6 +379,27 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                         }
                     })
             }
+    }
+
+    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+    fun onNotifyRider(event: NotifyRiderEvent) {
+        binding.llNotifyRider.visibility = View.VISIBLE
+        binding.progressBarNotify.max = Common.WAIT_TIME_IN_MIN * 60
+        val countDownTimer = object: CountDownTimer((binding.progressBarNotify.max*1000).toLong(),
+            1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                binding.progressBarNotify.progress += 1
+                binding.tvNotifyRider.text = String.format("%02d:%02d",
+                    TimeUnit.MILLISECONDS.toMinutes(1) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(1)),
+                    TimeUnit.MILLISECONDS.toSeconds(1) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(1)),
+                )
+            }
+
+            override fun onFinish() {
+                Snackbar.make(binding.flRoot, getString(R.string.time_over), Snackbar.LENGTH_LONG).show()
+            }
+        }
+            .start()
     }
 
     private fun initView() {
@@ -424,6 +458,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
                     val pos = LatLng(locationResult.lastLocation.latitude,
                         locationResult.lastLocation.longitude)
+                    if (pickupGeoFire != null) {
+                        pickupGeoQuery = pickupGeoFire!!.queryAtLocation(
+                            GeoLocation(locationResult.lastLocation.latitude, locationResult.lastLocation.longitude),
+                            Common.MIN_RANGE_PICKUP_IN_KM)
+
+                        pickupGeoQuery!!.addGeoQueryEventListener(this@HomeFragment)
+                    }
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f))
 
                     if(!isTripStart) {
@@ -641,5 +682,46 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.cvStartUber.visibility = View.VISIBLE
 
         isTripStart = true
+    }
+
+    private fun createGeoFirePickupLocation(key: String?, destination: LatLng) {
+        var ref = FirebaseDatabase.getInstance()
+            .getReference(Common.TRIP_PICKUP_REFERENCE)
+        pickupGeoFire = GeoFire(ref)
+        pickupGeoFire!!.setLocation(key, GeoLocation(destination.latitude, destination.longitude)
+        ) { key1, error ->
+            if (error != null) {
+                Snackbar.make(binding.flRoot, error.message, Snackbar.LENGTH_LONG).show()
+            } else {
+                Log.d("KEY", "" + key1)
+            }
+        }
+    }
+
+    override fun onKeyEntered(key: String?, location: GeoLocation?) {
+        binding.btnStartUber.isEnabled = true
+        UserUtils.sendNotifyToRider(requireContext(), binding.flRoot, key)
+        if (pickupGeoQuery != null) {
+            //remove
+            pickupGeoFire!!.removeLocation(key)
+            pickupGeoFire = null
+            pickupGeoQuery!!.removeAllListeners()
+        }
+    }
+
+    override fun onKeyExited(key: String?) {
+        binding.btnStartUber.isEnabled = false
+    }
+
+    override fun onKeyMoved(key: String?, location: GeoLocation?) {
+
+    }
+
+    override fun onGeoQueryReady() {
+
+    }
+
+    override fun onGeoQueryError(error: DatabaseError?) {
+
     }
 }
