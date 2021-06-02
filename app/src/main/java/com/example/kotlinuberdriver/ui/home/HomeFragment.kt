@@ -115,6 +115,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     //countDownTimer
     private var waitingTimer: CountDownTimer?= null
 
+
     private val onlineValueEventListener = object:ValueEventListener{
         override fun onDataChange(snapshot: DataSnapshot) {
             if(snapshot.exists() && currentUserRef != null){
