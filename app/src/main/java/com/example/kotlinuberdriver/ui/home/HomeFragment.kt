@@ -69,7 +69,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 
-class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
+class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private lateinit var homeViewModel: HomeViewModel
     private lateinit var mMap: GoogleMap
@@ -108,6 +108,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
     private var pickupGeoFire: GeoFire?= null
     private var pickupGeoQuery: GeoQuery?= null
 
+    //destination, completeTrip
+    private var destinationGeoFire: GeoFire?= null
+    private var destinationGeoQuery: GeoQuery?= null
+
+    //countDownTimer
+    private var waitingTimer: CountDownTimer?= null
+
     private val onlineValueEventListener = object:ValueEventListener{
         override fun onDataChange(snapshot: DataSnapshot) {
             if(snapshot.exists() && currentUserRef != null){
@@ -117,6 +124,63 @@ class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
 
         override fun onCancelled(error: DatabaseError) {
             Snackbar.make(mapFragment.requireView(), error.message, Snackbar.LENGTH_SHORT).show()
+        }
+    }
+
+    private val pickupGeoQueryListener = object: GeoQueryEventListener{
+        override fun onKeyEntered(key: String?, location: GeoLocation?) {
+            binding.btnStartUber.isEnabled = true
+            UserUtils.sendNotifyToRider(requireContext(), binding.flRoot, key)
+            if (pickupGeoQuery != null) {
+                //remove
+                pickupGeoFire!!.removeLocation(key)
+                pickupGeoFire = null
+                pickupGeoQuery!!.removeAllListeners()
+            }
+        }
+
+        override fun onKeyExited(key: String?) {
+            binding.btnStartUber.isEnabled = false
+        }
+
+        override fun onKeyMoved(key: String?, location: GeoLocation?) {
+
+        }
+
+        override fun onGeoQueryReady() {
+
+        }
+
+        override fun onGeoQueryError(error: DatabaseError?) {
+
+        }
+    }
+
+    private val destinationQueryEventListener = object: GeoQueryEventListener{
+        override fun onKeyEntered(key: String?, location: GeoLocation?) {
+            Toast.makeText(requireContext(), "Destination Entered", Toast.LENGTH_SHORT).show()
+            binding.btnCompleteTrip.isEnabled = true
+            if (destinationGeoQuery != null) {
+                destinationGeoFire!!.removeLocation(key)
+                destinationGeoFire = null
+                destinationGeoQuery!!.removeAllListeners()
+            }
+        }
+
+        override fun onKeyExited(key: String?) {
+
+        }
+
+        override fun onKeyMoved(key: String?, location: GeoLocation?) {
+
+        }
+
+        override fun onGeoQueryReady() {
+
+        }
+
+        override fun onGeoQueryError(error: DatabaseError?) {
+
         }
     }
 
@@ -416,6 +480,39 @@ class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
                 driverRequestReceived = null
             }
         }
+
+        binding.btnStartUber.setOnClickListener {
+            if (blackPolyline != null) {
+                blackPolyline!!.remove()
+            }
+            if (greyPolyline != null) {
+                greyPolyline!!.remove()
+            }
+            if (waitingTimer != null) {  //cancel waiting time
+                waitingTimer!!.cancel()
+            }
+            binding.llNotifyRider.visibility = View.GONE
+
+            if (driverRequestReceived != null) {
+                val destinationLatLng = LatLng(
+                    driverRequestReceived!!.destinationLocation!!.split(",")[0].toDouble(),
+                    driverRequestReceived!!.destinationLocation!!.split(",")[1].toDouble()
+                )
+                mMap.addMarker(MarkerOptions().position(destinationLatLng)
+                    .title(driverRequestReceived!!.destinationLocationString)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)))
+
+                //draw path
+                drawPathFromCurrentLocation(driverRequestReceived!!.destinationLocation)
+            }
+            binding.btnStartUber.visibility = View.GONE
+            binding.chipDecline.visibility = View.GONE
+            binding.btnCompleteTrip.visibility = View.VISIBLE
+        }
+
+        binding.btnCompleteTrip.setOnClickListener {
+            Toast.makeText(requireContext(), "Complete trip fake action", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun initDriverLocation() {
@@ -463,8 +560,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
                             GeoLocation(locationResult.lastLocation.latitude, locationResult.lastLocation.longitude),
                             Common.MIN_RANGE_PICKUP_IN_KM)
 
-                        pickupGeoQuery!!.addGeoQueryEventListener(this@HomeFragment)
+                        pickupGeoQuery!!.addGeoQueryEventListener(pickupGeoQueryListener)
                     }
+                    if (destinationGeoFire != null) {
+                        destinationGeoQuery = destinationGeoFire!!.queryAtLocation(
+                            GeoLocation(locationResult.lastLocation.latitude, locationResult.lastLocation.longitude),
+                            Common.MIN_RANGE_PICKUP_IN_KM)
+
+                        destinationGeoQuery!!.addGeoQueryEventListener(destinationQueryEventListener)
+                    }
+
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f))
 
                     if(!isTripStart) {
@@ -698,30 +803,95 @@ class HomeFragment : Fragment(), OnMapReadyCallback, GeoQueryEventListener {
         }
     }
 
-    override fun onKeyEntered(key: String?, location: GeoLocation?) {
-        binding.btnStartUber.isEnabled = true
-        UserUtils.sendNotifyToRider(requireContext(), binding.flRoot, key)
-        if (pickupGeoQuery != null) {
-            //remove
-            pickupGeoFire!!.removeLocation(key)
-            pickupGeoFire = null
-            pickupGeoQuery!!.removeAllListeners()
+    private fun drawPathFromCurrentLocation(destinationLocation: String?) {
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Snackbar.make(requireView(), getString(R.string.permission_require),
+                Snackbar.LENGTH_LONG).show()
+            return
         }
+        fusedLocationProviderClient!!.lastLocation
+            .addOnFailureListener { e->
+                Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_LONG).show()
+            }
+            .addOnSuccessListener { location ->
+                val originString = StringBuilder()
+                    .append(location.latitude)
+                    .append(",")
+                    .append(location.longitude)
+                    .toString()
+
+                compositeDisposable.add(googleApi.getDirection(
+                    "driving",
+                    "less_driving",
+                    originString,
+                    destinationLocation,
+                    getString(R.string.google_api_key))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe { it ->
+                        //Log.d("API_RETURN", it)
+                        try {
+                            val jsonObject = JSONObject(it)
+                            val jsonArray = jsonObject.getJSONArray("routes")
+                            for (i in 0 until jsonArray.length()) {
+                                val route = jsonArray.getJSONObject(i)
+                                val poly = route.getJSONObject("overview_polyline")
+                                val polyline = poly.getString("points")
+                                polylineList = Common.decodePoly(polyline)
+                            }
+                            polylineOptions = PolylineOptions()
+                            polylineOptions!!.color(Color.GRAY)
+                            polylineOptions!!.width(12f)
+                            polylineOptions!!.startCap(SquareCap())
+                            polylineOptions!!.jointType(JointType.ROUND)
+                            polylineOptions!!.addAll(polylineList!!)
+                            greyPolyline = mMap.addPolyline(polylineOptions!!)
+
+                            blackPolylineOptions = PolylineOptions()
+                            blackPolylineOptions!!.color(Color.BLACK)
+                            blackPolylineOptions!!.width(5f)
+                            blackPolylineOptions!!.startCap(SquareCap())
+                            blackPolylineOptions!!.jointType(JointType.ROUND)
+                            blackPolylineOptions!!.addAll(polylineList!!)
+                            blackPolyline = mMap.addPolyline(blackPolylineOptions!!)
+
+                            val origin = LatLng(location.latitude, location.longitude)
+                            val destination = LatLng(
+                                destinationLocation!!.split(",")[0].toDouble(),
+                                destinationLocation!!.split(",")[1].toDouble()
+                            )
+
+                            val latLngBound = LatLngBounds.Builder()
+                                .include(origin)
+                                .include(destination)
+                                .build()
+
+                            createGeoFireDestinationLocation(driverRequestReceived!!.key, destination)
+
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBound, 160))
+                            mMap.moveCamera(CameraUpdateFactory.zoomTo(mMap.cameraPosition.zoom-1))
+
+                        } catch (e: IOException) {
+                            Toast.makeText(context, e.message!!, Toast.LENGTH_SHORT).show()
+                        }
+                    })
+            }
     }
 
-    override fun onKeyExited(key: String?) {
-        binding.btnStartUber.isEnabled = false
-    }
+    private fun createGeoFireDestinationLocation(key: String?, destination: LatLng) {
+        val reference = FirebaseDatabase.getInstance()
+            .getReference(Common.TRIP_DESTINATION_LOCATION_REFERENCE)
+        destinationGeoFire = GeoFire(reference)
+        destinationGeoFire!!.setLocation(key, GeoLocation(destination.latitude, destination.longitude)
+        ) { key1, error ->
 
-    override fun onKeyMoved(key: String?, location: GeoLocation?) {
-
-    }
-
-    override fun onGeoQueryReady() {
-
-    }
-
-    override fun onGeoQueryError(error: DatabaseError?) {
-
+        }
     }
 }

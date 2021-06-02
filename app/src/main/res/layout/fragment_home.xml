@@ -268,18 +268,38 @@
 
             </RelativeLayout>
 
-            <com.kusu.loadingbutton.LoadingButton
-                android:id="@+id/btn_start_uber"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:enabled="false"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:text="@string/start_uber"
-                android:textColor="@color/white"
-                app:lb_buttonColor="@color/colorStartUber"
-                app:lb_isCircular="true" />
+                android:layout_height="wrap_content">
+
+                <com.kusu.loadingbutton.LoadingButton
+                    android:id="@+id/btn_start_uber"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:enabled="false"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:text="@string/start_uber"
+                    android:textColor="@color/white"
+                    app:lb_buttonColor="@color/colorStartUber"
+                    app:lb_isCircular="true" />
+
+                <com.kusu.loadingbutton.LoadingButton
+                    android:id="@+id/btn_complete_trip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:enabled="false"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:text="@string/complete_trip"
+                    android:textColor="@color/white"
+                    android:visibility="gone"
+                    app:lb_buttonColor="@color/colorStartUber"
+                    app:lb_isCircular="true" />
+
+            </FrameLayout>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

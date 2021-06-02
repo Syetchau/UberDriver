@@ -27,6 +27,7 @@
     <string name="decline_failed">Decline failed</string>
     <string name="token_not_found">Token not found</string>
     <string name="start_uber">START UBER</string>
+    <string name="complete_trip">COMPLETE TRIP</string>
     <string name="rider_not_found">Rider not found</string>
     <string name="accept_failed">Accept failed</string>
     <string name="driver_arrived">Driver arrived</string>
