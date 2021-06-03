@@ -469,17 +469,27 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun initView() {
         binding.chipDecline.setOnClickListener {
-            if(driverRequestReceived != null) {
-                if (countDownEvent != null) {
-                    countDownEvent!!.dispose()
-                }
-                binding.chipDecline.visibility = View.GONE
-                binding.cvAccept.visibility = View.GONE
-                mMap.clear()
-                binding.circularProgresBar.progress = 0
-                UserUtils.sendDeclineRequest(binding.flRoot, activity, driverRequestReceived!!.key!!)
-                driverRequestReceived = null
-            }
+           if(TextUtils.isEmpty(tripNumberId)) {
+               if(driverRequestReceived != null) {
+                   if (countDownEvent != null) {
+                       countDownEvent!!.dispose()
+                   }
+                   binding.chipDecline.visibility = View.GONE
+                   binding.cvAccept.visibility = View.GONE
+                   mMap.clear()
+                   binding.circularProgresBar.progress = 0
+                   UserUtils.sendDeclineRequest(binding.flRoot, activity,
+                       driverRequestReceived!!.key!!)
+               }
+           } else {
+               binding.chipDecline.visibility = View.GONE
+               binding.cvStartUber.visibility = View.GONE
+               mMap.clear()
+               UserUtils.sendDeclineAndRemoveTripRequest(binding.flRoot, activity,
+                   driverRequestReceived!!.key!!, tripNumberId)
+               tripNumberId = ""
+           }
+            driverRequestReceived = null
         }
 
         binding.btnStartUber.setOnClickListener {

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.view.View
 import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
 import com.example.kotlinuberdriver.Common
 import com.example.kotlinuberdriver.Model.EventBus.NotifyRiderEvent
 import com.example.kotlinuberdriver.Model.FCMSendData
@@ -189,5 +190,67 @@ object UserUtils {
                     Snackbar.make(view, error.message, Snackbar.LENGTH_LONG).show()
                 }
             })
+    }
+
+    fun sendDeclineAndRemoveTripRequest(view: View,
+                                        activity: FragmentActivity?,
+                                        key: String,
+                                        tripNumberId: String?) {
+
+        val compositeDisposable = CompositeDisposable()
+        val fcmService = RetrofitFCMClient.instance!!.create(FCMService::class.java)
+
+        //removeTripNumberId
+        FirebaseDatabase.getInstance()
+            .getReference(Common.TRIP)
+            .child(tripNumberId!!)
+            .removeValue()
+            .addOnFailureListener { e->
+                Snackbar.make(view, e.message!!, Snackbar.LENGTH_LONG).show()
+            }
+            .addOnSuccessListener {
+                //remove success, send notification to rider
+                FirebaseDatabase    //Get token
+                    .getInstance()
+                    .getReference(Common.TOKEN_REFERENCE)
+                    .child(key)
+                    .addListenerForSingleValueEvent(object: ValueEventListener {
+                        override fun onDataChange(snapshot: DataSnapshot) {
+                            if (snapshot.exists()){
+                                val tokenModel = snapshot.getValue(Token::class.java)
+                                val notificationData: MutableMap<String, String> = HashMap()
+                                notificationData[Common.NOTIFICATION_TITLE] = Common.REQUEST_DRIVER_DECLINE_AND_REMOVE_TRIP
+                                notificationData[Common.NOTIFICATION_BODY] = "This message represent for decline action from driver"
+                                notificationData[Common.DRIVER_KEY] = FirebaseAuth.getInstance().currentUser!!.uid
+
+                                val fcmData = FCMSendData(tokenModel!!.token, notificationData)
+                                compositeDisposable.add(fcmService.sendNotification(fcmData)!!
+                                    .subscribeOn(Schedulers.newThread())
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe({response ->
+                                        if (response!!.success == 0){
+                                            compositeDisposable.clear()
+                                            Snackbar.make(view, activity!!.getString(R.string.decline_failed),
+                                                Snackbar.LENGTH_LONG).show()
+                                        } else {
+                                            Snackbar.make(view, activity!!.getString(R.string.decline_success),
+                                                Snackbar.LENGTH_LONG).show()
+                                        }
+                                    }, {t: Throwable? ->
+                                        compositeDisposable.clear()
+                                        Snackbar.make(view,t!!.message!!, Snackbar.LENGTH_LONG).show()
+                                    }))
+                            } else{
+                                compositeDisposable.clear()
+                                Snackbar.make(view, activity!!.getString(R.string.token_not_found),
+                                    Snackbar.LENGTH_LONG).show()
+                            }
+                        }
+
+                        override fun onCancelled(error: DatabaseError) {
+                            Snackbar.make(view, error.message, Snackbar.LENGTH_LONG).show()
+                        }
+                    })
+            }
     }
 }
