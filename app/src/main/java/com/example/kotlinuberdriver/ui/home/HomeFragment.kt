@@ -8,6 +8,7 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
+import android.location.Location
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Looper
@@ -480,16 +481,37 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                    binding.circularProgresBar.progress = 0
                    UserUtils.sendDeclineRequest(binding.flRoot, activity,
                        driverRequestReceived!!.key!!)
+                   driverRequestReceived = null
                }
            } else {
-               binding.chipDecline.visibility = View.GONE
-               binding.cvStartUber.visibility = View.GONE
-               mMap.clear()
-               UserUtils.sendDeclineAndRemoveTripRequest(binding.flRoot, activity,
-                   driverRequestReceived!!.key!!, tripNumberId)
-               tripNumberId = ""
+               if (ActivityCompat.checkSelfPermission(
+                       requireContext(),
+                       Manifest.permission.ACCESS_FINE_LOCATION
+                   ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                       requireContext(),
+                       Manifest.permission.ACCESS_COARSE_LOCATION
+                   ) != PackageManager.PERMISSION_GRANTED
+               ) {
+                   Snackbar.make(mapFragment.requireView(), getString(R.string.permission_require),
+                       Snackbar.LENGTH_LONG).show()
+                   return@setOnClickListener
+               }
+               fusedLocationProviderClient!!.lastLocation
+                   .addOnFailureListener { e ->
+                       Snackbar.make(mapFragment.requireView(), e.message!!,
+                           Snackbar.LENGTH_LONG).show()
+                   }
+                   .addOnSuccessListener { location ->
+                       binding.chipDecline.visibility = View.GONE
+                       binding.cvStartUber.visibility = View.GONE
+                       mMap.clear()
+                       UserUtils.sendDeclineAndRemoveTripRequest(binding.flRoot, activity,
+                           driverRequestReceived!!.key!!, tripNumberId)
+                       tripNumberId = ""
+                       driverRequestReceived = null
+                       makeDriverOnline(location)
+                   }
            }
-            driverRequestReceived = null
         }
 
         binding.btnStartUber.setOnClickListener {
@@ -584,41 +606,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f))
 
                     if(!isTripStart) {
-                        val geoCoder = Geocoder(requireContext(), Locale.getDefault())
-                        val addressList: List<Address>?
-                        try {
-                            addressList = geoCoder.getFromLocation(
-                                locationResult.lastLocation.latitude,
-                                locationResult.lastLocation.longitude, 1
-                            )
-                            val cityName = addressList[0].locality
-
-                            driversLocationRef = FirebaseDatabase.getInstance()
-                                .getReference(Common.DRIVERS_LOCATION_REFERENCE)
-                                .child(cityName)
-                            currentUserRef = driversLocationRef
-                                .child(FirebaseAuth.getInstance().currentUser!!.uid)
-                            geofire = GeoFire(driversLocationRef)
-
-                            //update location
-                            geofire.setLocation(
-                                FirebaseAuth.getInstance().currentUser!!.uid,
-                                GeoLocation(
-                                    locationResult.lastLocation.latitude,
-                                    locationResult.lastLocation.longitude
-                                )
-                            ) { _: String?, error: DatabaseError? ->
-                                if (error != null) {
-                                    Snackbar.make(
-                                        mapFragment.requireView(), error.message,
-                                        Snackbar.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                            registerOnlineSystem()
-                        } catch (e: IOException) {
-                            Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_SHORT).show()
-                        }
+                        makeDriverOnline(locationResult.lastLocation)
                     } else {
                         if (!TextUtils.isEmpty(tripNumberId)) {
                             // update location
@@ -663,6 +651,42 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             fusedLocationProviderClient!!.requestLocationUpdates(
                 locationRequest, locationCallback, Looper.myLooper()
             )
+        }
+    }
+
+    private fun makeDriverOnline(location: Location) {
+        val geoCoder = Geocoder(requireContext(), Locale.getDefault())
+        val addressList: List<Address>?
+        try {
+            addressList = geoCoder.getFromLocation(
+                location.latitude,
+                location.longitude,
+                1
+            )
+            val cityName = addressList[0].locality
+
+            driversLocationRef = FirebaseDatabase.getInstance()
+                .getReference(Common.DRIVERS_LOCATION_REFERENCE)
+                .child(cityName)
+            currentUserRef = driversLocationRef
+                .child(FirebaseAuth.getInstance().currentUser!!.uid)
+            geofire = GeoFire(driversLocationRef)
+
+            //update location
+            geofire.setLocation(
+                FirebaseAuth.getInstance().currentUser!!.uid,
+                GeoLocation(location.latitude, location.longitude)
+            ) { _: String?, error: DatabaseError? ->
+                if (error != null) {
+                    Snackbar.make(
+                        mapFragment.requireView(), error.message,
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            registerOnlineSystem()
+        } catch (e: IOException) {
+            Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_SHORT).show()
         }
     }
 
