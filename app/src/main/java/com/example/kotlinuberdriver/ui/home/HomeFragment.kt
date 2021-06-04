@@ -544,7 +544,25 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
 
         binding.btnCompleteTrip.setOnClickListener {
-            Toast.makeText(requireContext(), "Complete trip fake action", Toast.LENGTH_SHORT).show()
+            //update tripDone to true
+            val updateTrip = HashMap<String, Any>()
+            updateTrip["done"] = true
+            FirebaseDatabase.getInstance()
+                .getReference(Common.TRIP)
+                .child(tripNumberId!!)
+                .updateChildren(updateTrip)
+                .addOnFailureListener { e ->
+                    Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_LONG).show()
+                }
+                .addOnSuccessListener { location ->
+                    fusedLocationProviderClient!!.lastLocation
+                        .addOnFailureListener { e ->
+                            Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_LONG).show()
+                        }
+                        .addOnSuccessListener { location ->
+
+                        }
+                }
         }
     }
 
