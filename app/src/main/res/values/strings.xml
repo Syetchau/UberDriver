@@ -33,4 +33,6 @@
     <string name="driver_arrived">Driver arrived</string>
     <string name="your_driver_arrived">Your driver arrived</string>
     <string name="time_over">Time Over</string>
+    <string name="complete_trip_success">Thank you! You have completed this trip.</string>
+    <string name="complete_trip_failed">Failed to complete trip</string>
 </resources>

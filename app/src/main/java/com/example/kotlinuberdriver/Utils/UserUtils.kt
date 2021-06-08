@@ -253,4 +253,50 @@ object UserUtils {
                     })
             }
     }
+
+    fun sendCompleteTripToRider(view: View, context: Context, driverKey: String, tripNumberId: String) {
+        val compositeDisposable = CompositeDisposable()
+        val fcmService = RetrofitFCMClient.instance!!.create(FCMService::class.java)
+
+        FirebaseDatabase.getInstance()
+            .getReference(Common.TOKEN_REFERENCE)
+            .child(driverKey)
+            .addListenerForSingleValueEvent(object: ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()){
+                        val tokenModel = snapshot.getValue(Token::class.java)
+                        val notificationData: MutableMap<String, String> = HashMap()
+                        notificationData[Common.NOTIFICATION_TITLE] = Common.RIDER_REQUEST_COMPLETE_TRIP
+                        notificationData[Common.NOTIFICATION_BODY] = "This message represent for request complete trip to rider"
+                        notificationData[Common.TRIP_KEY] = tripNumberId
+
+                        val fcmData = FCMSendData(tokenModel!!.token, notificationData)
+                        compositeDisposable.add(fcmService.sendNotification(fcmData)!!
+                            .subscribeOn(Schedulers.newThread())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe({response ->
+                                if (response!!.success == 0){
+                                    compositeDisposable.clear()
+                                    Snackbar.make(view, context.getString(R.string.complete_trip_failed),
+                                        Snackbar.LENGTH_LONG).show()
+                                } else {
+                                    Snackbar.make(view, context.getString(R.string.complete_trip_success),
+                                        Snackbar.LENGTH_LONG).show()
+                                }
+                            }, {t: Throwable? ->
+                                compositeDisposable.clear()
+                                Snackbar.make(view,t!!.message!!, Snackbar.LENGTH_LONG).show()
+                            }))
+                    } else{
+                        compositeDisposable.clear()
+                        Snackbar.make(view, context.getString(R.string.token_not_found),
+                            Snackbar.LENGTH_LONG).show()
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Snackbar.make(view, error.message, Snackbar.LENGTH_LONG).show()
+                }
+            })
+    }
 }

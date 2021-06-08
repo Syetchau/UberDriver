@@ -39,6 +39,7 @@ object Common {
     const val TRIP_PICKUP_REFERENCE: String = "TripPickupLocation"
     const val TRIP_DESTINATION_LOCATION_REFERENCE: String = "TripDestinationLocation"
     const val REQUEST_DRIVER_DECLINE_AND_REMOVE_TRIP: String = "DeclineAndRemoveTrip"
+    const val RIDER_REQUEST_COMPLETE_TRIP: String = "RequestCompleteTripToRider"
     const val MIN_RANGE_PICKUP_IN_KM: Double = 0.05  //50m
     const val WAIT_TIME_IN_MIN: Int = 1
 

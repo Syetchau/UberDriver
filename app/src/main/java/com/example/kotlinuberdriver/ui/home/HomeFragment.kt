@@ -560,7 +560,29 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                             Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_LONG).show()
                         }
                         .addOnSuccessListener { location ->
+                            UserUtils.sendCompleteTripToRider(mapFragment.requireView(),
+                                requireContext(), driverRequestReceived!!.key!!, tripNumberId!!)
 
+                            //reset view
+                            mMap.clear()
+                            tripNumberId = ""
+                            isTripStart = false
+                            binding.chipDecline.visibility = View.GONE
+                            binding.cvAccept.visibility = View.GONE
+                            binding.circularProgresBar.progress = 0
+                            binding.cvStartUber.visibility = View.GONE
+                            binding.llNotifyRider.visibility = View.GONE
+                            binding.progressBarNotify.progress = 0
+                            binding.btnCompleteTrip.isEnabled = false
+                            binding.btnCompleteTrip.visibility = View.GONE
+                            binding.btnStartUber.isEnabled = false
+                            binding.btnStartUber.visibility = View.VISIBLE
+
+                            destinationGeoFire = null
+                            pickupGeoFire = null
+                            driverRequestReceived = null
+
+                            makeDriverOnline(location)
                         }
                 }
         }
