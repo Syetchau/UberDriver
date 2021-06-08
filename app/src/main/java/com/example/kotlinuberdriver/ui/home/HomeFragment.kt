@@ -34,6 +34,7 @@ import com.example.kotlinuberdriver.Model.TripPlan
 import com.example.kotlinuberdriver.R
 import com.example.kotlinuberdriver.Remote.GoogleApi
 import com.example.kotlinuberdriver.Remote.RetrofitClient
+import com.example.kotlinuberdriver.Utils.LocationUtils
 import com.example.kotlinuberdriver.Utils.UserUtils
 import com.example.kotlinuberdriver.databinding.FragmentHomeBinding
 import com.firebase.geofire.GeoFire
@@ -116,6 +117,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     //countDownTimer
     private var waitingTimer: CountDownTimer?= null
 
+    private var cityName: String = ""
 
     private val onlineValueEventListener = object:ValueEventListener{
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -695,16 +697,26 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun makeDriverOnline(location: Location) {
-        val geoCoder = Geocoder(requireContext(), Locale.getDefault())
-        val addressList: List<Address>?
-        try {
-            addressList = geoCoder.getFromLocation(
-                location.latitude,
-                location.longitude,
-                1
-            )
-            val cityName = addressList[0].locality
+        val savedCityName = cityName
+        cityName = LocationUtils.getAddressFromLocation(requireContext(), location)
 
+        if (cityName != savedCityName) {
+            if (currentUserRef != null) {
+                currentUserRef!!.removeValue()
+                    .addOnFailureListener { e->
+                        Snackbar.make(mapFragment.requireView(), e.message!!, Snackbar.LENGTH_LONG).show()
+                    }
+                    .addOnSuccessListener {
+                        updateDriverLocation(location)
+                    }
+            }
+        } else {
+            updateDriverLocation(location)
+        }
+    }
+
+    private fun updateDriverLocation(location: Location) {
+        if (!TextUtils.isEmpty(cityName)) {
             driversLocationRef = FirebaseDatabase.getInstance()
                 .getReference(Common.DRIVERS_LOCATION_REFERENCE)
                 .child(cityName)
@@ -725,8 +737,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 }
             }
             registerOnlineSystem()
-        } catch (e: IOException) {
-            Snackbar.make(requireView(), e.message!!, Snackbar.LENGTH_SHORT).show()
+        } else {
+            Snackbar.make(
+                mapFragment.requireView(), getString(R.string.service_unavailable),
+                Snackbar.LENGTH_SHORT).show()
         }
     }
 

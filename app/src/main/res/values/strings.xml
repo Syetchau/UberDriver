@@ -35,4 +35,5 @@
     <string name="time_over">Time Over</string>
     <string name="complete_trip_success">Thank you! You have completed this trip.</string>
     <string name="complete_trip_failed">Failed to complete trip</string>
+    <string name="service_unavailable">Service unavailable</string>
 </resources>
