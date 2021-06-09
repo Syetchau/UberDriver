@@ -17,4 +17,11 @@ class TripPlan {
     var currentLng: Double = -1.0
     var isDone = false
     var isCancel = false
+
+    var distanceText: String?= ""
+    var durationText: String?= ""
+    var timeText: String?= " "
+    var distanceValue: Int = 0
+    var durationValue: Int = 0
+    var totalFee: Double = 0.0
 }

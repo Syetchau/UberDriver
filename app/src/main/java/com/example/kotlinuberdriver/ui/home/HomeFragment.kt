@@ -67,6 +67,7 @@ import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONObject
 import java.io.IOException
 import java.lang.StringBuilder
+import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
@@ -759,6 +760,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             .addListenerForSingleValueEvent(object: ValueEventListener{
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val timeOffset = snapshot.getValue(Long::class.java)
+                    val estimateTimeInMs = System.currentTimeMillis() + timeOffset!!
+                    var timeText = SimpleDateFormat("dd/MM/yyyy HH:mm aa")
+                        .format(estimateTimeInMs)
+
                     //load rider info
                     FirebaseDatabase
                         .getInstance()
@@ -803,6 +808,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                                             tripPlan.distancePickup = distance
                                             tripPlan.currentLat = location.latitude
                                             tripPlan.currentLng = location.longitude
+                                            tripPlan.timeText = timeText
+                                            tripPlan.distanceText = event.distanceText
+                                            tripPlan.durationText = event.durationText
+                                            tripPlan.distanceValue = event.distanceValue
+                                            tripPlan.durationValue = event.durationValue
+                                            tripPlan.totalFee = event.totalFee
                                             tripNumberId = Common.createUniqueTripId(timeOffset)
 
                                             //submit

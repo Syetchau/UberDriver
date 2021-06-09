@@ -42,6 +42,11 @@ object Common {
     const val RIDER_REQUEST_COMPLETE_TRIP: String = "RequestCompleteTripToRider"
     const val MIN_RANGE_PICKUP_IN_KM: Double = 0.05  //50m
     const val WAIT_TIME_IN_MIN: Int = 1
+    const val RIDER_DISTANCE_TEXT: String = "DistanceRider"
+    const val RIDER_DISTANCE_VALUE: String = "DistanceValueRider"
+    const val RIDER_DURATION_TEXT: String = "DurationRider"
+    const val RIDER_DURATION_VALUE: String = "DurationValueRider"
+    const val RIDER_TOTAL_FEE: String = "TotalFeeRider"
 
     fun buildWelcomeMessage(): String {
         return StringBuilder("Welcome, ")

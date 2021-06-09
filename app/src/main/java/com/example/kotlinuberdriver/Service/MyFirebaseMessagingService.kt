@@ -32,6 +32,13 @@ class MyFirebaseMessagingService: FirebaseMessagingService() {
                 driverRequestReceived.destinationLocation = data[Common.DESTINATION_LOCATION]
                 driverRequestReceived.destinationLocationString = data[Common.DESTINATION_LOCATION_STRING]
 
+                //newInfo
+                driverRequestReceived.distanceValue = data[Common.RIDER_DISTANCE_VALUE]!!.toInt()
+                driverRequestReceived.durationValue = data[Common.RIDER_DURATION_VALUE]!!.toInt()
+                driverRequestReceived.distanceText = data[Common.RIDER_DISTANCE_TEXT]
+                driverRequestReceived.durationText = data[Common.RIDER_DURATION_TEXT]
+                driverRequestReceived.totalFee = data[Common.RIDER_TOTAL_FEE]!!.toDouble()
+
                 EventBus.getDefault().postSticky(driverRequestReceived)
             } else {
                 Common.showNotification(this, Random.nextInt(),
